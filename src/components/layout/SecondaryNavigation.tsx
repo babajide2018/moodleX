@@ -18,11 +18,16 @@ export default function SecondaryNavigation({ tabs }: SecondaryNavigationProps) 
 
   if (!tabs || tabs.length === 0) return null;
 
+  // Find the best (longest) matching tab to avoid /admin matching everything under /admin/*
+  const activeTab = tabs
+    .filter((tab) => pathname === tab.href || pathname.startsWith(tab.href + '/'))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+
   return (
     <div className="secondary-navigation">
       <ul className="nav">
         {tabs.map((tab) => {
-          const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
+          const isActive = activeTab?.key === tab.key;
           return (
             <li key={tab.key}>
               <Link

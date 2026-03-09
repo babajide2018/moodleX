@@ -5,6 +5,8 @@ import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import SecondaryNavigation from '@/components/layout/SecondaryNavigation';
 import { adminTabs } from '@/lib/admin-tabs';
+import AdminCategoryGrid from '@/components/admin/AdminCategoryGrid';
+import { serverCategories } from '@/lib/admin-structure';
 import {
   Save,
   Globe,
@@ -123,8 +125,13 @@ export default function AdminSettingsPage() {
       <SecondaryNavigation tabs={adminTabs} />
 
       <div id="page-content" className="p-4">
-        <div id="region-main" className="max-w-4xl">
-          <div className="space-y-4">
+        <div id="region-main">
+          {/* Server subcategory navigation */}
+          <div className="mb-6">
+            <AdminCategoryGrid categories={serverCategories} />
+          </div>
+
+          <div className="max-w-4xl space-y-4">
             {/* Front page */}
             <SettingsSection title="Front page settings" icon={<Globe size={16} />} defaultOpen={true}>
               <SettingField label="Full site name">
