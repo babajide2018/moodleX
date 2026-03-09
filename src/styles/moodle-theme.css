@@ -1,0 +1,798 @@
+/* ============================================================
+   Moodle Boost Theme - CSS Variables & Base Styles
+   Pixel-perfect recreation of Moodle's default Boost theme
+   ============================================================ */
+
+:root {
+  /* Moodle Boost Primary Colors */
+  --moodle-primary: #0f6cbf;
+  --moodle-primary-dark: #0a5da6;
+  --moodle-primary-light: #e8f0fe;
+  --moodle-secondary: #ced4da;
+  --moodle-success: #357a32;
+  --moodle-info: #008196;
+  --moodle-warning: #f0ad4e;
+  --moodle-danger: #ca3120;
+
+  /* Moodle Layout Dimensions */
+  --navbar-height: 74px;
+  --drawer-width-left: 285px;
+  --drawer-width-right: 315px;
+  --drawer-padding-x: 20px;
+  --drawer-padding-y: 20px;
+  --footer-height: auto;
+
+  /* Moodle Spacing */
+  --content-padding: 1rem;
+  --page-padding-top: calc(var(--navbar-height) + 0.5rem);
+
+  /* Moodle Fonts - matching Boost theme */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-size-base: 0.9375rem; /* 15px */
+  --font-size-sm: 0.8125rem;
+  --font-size-lg: 1.125rem;
+  --line-height-base: 1.5;
+
+  /* Moodle Background Colors */
+  --bg-body: #fff;
+  --bg-navbar: #fff;
+  --bg-drawer: #fff;
+  --bg-footer: #f8f9fa;
+  --bg-page-header: transparent;
+  --bg-card: #fff;
+  --bg-light: #f8f9fa;
+  --bg-hover: #e9ecef;
+
+  /* Moodle Borders */
+  --border-color: #dee2e6;
+  --border-radius: 0.5rem;
+  --border-radius-sm: 0.25rem;
+
+  /* Moodle Text Colors */
+  --text-primary: #1d2125;
+  --text-secondary: #6a737b;
+  --text-muted: #6c757d;
+  --text-link: var(--moodle-primary);
+
+  /* Moodle Shadows */
+  --shadow-navbar: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-drawer: 2px 0 4px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --shadow-dropdown: 0 0.5rem 1rem rgba(0, 0, 0, 0.175);
+}
+
+/* Base reset matching Moodle */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-padding-top: 60px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-primary);
+  background-color: var(--bg-body);
+  margin: 0;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--moodle-primary-dark);
+  text-decoration: underline;
+}
+
+/* ============================================================
+   Moodle Layout Structure
+   ============================================================ */
+
+/* Page wrapper */
+#page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Main content area - adjusts for drawers */
+.drawers {
+  display: flex;
+  flex: 1;
+  padding-top: var(--navbar-height);
+  transition: margin 0.2s ease-in-out;
+}
+
+.drawers.drawer-open-left {
+  margin-left: var(--drawer-width-left);
+}
+
+.drawers.drawer-open-right {
+  margin-right: var(--drawer-width-right);
+}
+
+/* Main inner content */
+.main-inner {
+  flex: 1;
+  max-width: 100%;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Page content */
+#page-content {
+  padding: var(--content-padding);
+}
+
+#region-main {
+  max-width: 100%;
+}
+
+/* ============================================================
+   Navbar Styles (Moodle Boost - fixed top)
+   ============================================================ */
+
+.navbar-moodle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
+  height: var(--navbar-height);
+  background-color: var(--bg-navbar);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-navbar);
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-brand:hover {
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: border-color 0.15s ease-in-out;
+  height: var(--navbar-height);
+}
+
+.nav-link:hover {
+  color: var(--moodle-primary);
+  text-decoration: none;
+  border-bottom-color: var(--moodle-primary);
+}
+
+.nav-link.active {
+  color: var(--moodle-primary);
+  border-bottom-color: var(--moodle-primary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Drawer Styles (Left: Course Index, Right: Blocks)
+   ============================================================ */
+
+.drawer {
+  position: fixed;
+  top: var(--navbar-height);
+  bottom: 0;
+  z-index: 1020;
+  background-color: var(--bg-drawer);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: transform 0.2s ease-in-out;
+  border-right: 1px solid var(--border-color);
+}
+
+.drawer-left {
+  left: 0;
+  width: var(--drawer-width-left);
+  transform: translateX(0);
+}
+
+.drawer-left.closed {
+  transform: translateX(-100%);
+}
+
+.drawer-right {
+  right: 0;
+  width: var(--drawer-width-right);
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+  transform: translateX(0);
+}
+
+.drawer-right.closed {
+  transform: translateX(100%);
+}
+
+.drawer-content {
+  padding: var(--drawer-padding-y) var(--drawer-padding-x);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--drawer-padding-x);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: var(--font-size-base);
+}
+
+/* Drawer toggle buttons */
+.drawer-toggler {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease-in-out;
+}
+
+.drawer-toggler:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Page Header (Moodle style)
+   ============================================================ */
+
+.page-header-moodle {
+  padding: 1rem var(--content-padding);
+  padding-bottom: 0;
+}
+
+.page-header-moodle h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+}
+
+/* Breadcrumb - Moodle style */
+.breadcrumb-moodle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumb-moodle li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.breadcrumb-moodle li + li::before {
+  content: "/";
+  color: var(--text-muted);
+  margin: 0 0.125rem;
+}
+
+.breadcrumb-moodle a {
+  color: var(--text-link);
+}
+
+.breadcrumb-moodle .active {
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   Footer (Moodle Boost style)
+   ============================================================ */
+
+.footer-moodle {
+  background-color: var(--bg-light);
+  border-top: 1px solid var(--border-color);
+  padding: 1rem;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: auto;
+}
+
+.footer-popover-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.footer-links a {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.footer-links a:hover {
+  color: var(--moodle-primary);
+}
+
+/* ============================================================
+   Card Styles (Moodle course cards)
+   ============================================================ */
+
+.card-moodle {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.card-moodle:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.card-img-top {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background-color: var(--bg-light);
+}
+
+.card-body {
+  padding: 1rem;
+}
+
+.card-title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  line-height: 1.4;
+}
+
+.card-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ============================================================
+   Buttons (Moodle Bootstrap 5 style)
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: var(--moodle-primary);
+  border-color: var(--moodle-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--moodle-primary-dark);
+  border-color: var(--moodle-primary-dark);
+}
+
+.btn-secondary {
+  color: var(--text-primary);
+  background-color: var(--moodle-secondary);
+  border-color: var(--moodle-secondary);
+}
+
+.btn-secondary:hover {
+  background-color: #b1bbc4;
+  border-color: #a7b1b9;
+}
+
+.btn-outline-secondary {
+  color: var(--text-primary);
+  background-color: transparent;
+  border-color: var(--moodle-secondary);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--moodle-secondary);
+}
+
+.btn-link {
+  color: var(--text-link);
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 400;
+}
+
+.btn-link:hover {
+  color: var(--moodle-primary-dark);
+  text-decoration: underline;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.btn-icon:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Form Styles (Moodle style)
+   ============================================================ */
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(15, 108, 191, 0.25);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   User Menu (Moodle style dropdown)
+   ============================================================ */
+
+.user-menu {
+  position: relative;
+}
+
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+}
+
+.user-menu-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: var(--moodle-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1050;
+  min-width: 240px;
+  padding: 0.5rem 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-hover);
+  text-decoration: none;
+}
+
+.dropdown-divider {
+  height: 0;
+  margin: 0.5rem 0;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ============================================================
+   Course Index (Left drawer - Moodle style)
+   ============================================================ */
+
+.courseindex {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.courseindex-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.courseindex-item-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem var(--drawer-padding-x);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: background-color 0.1s;
+}
+
+.courseindex-item-content:hover {
+  background-color: var(--bg-hover);
+}
+
+.courseindex-item-content.active {
+  background-color: var(--moodle-primary-light);
+  color: var(--moodle-primary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Secondary Navigation (Moodle tabs style)
+   ============================================================ */
+
+.secondary-navigation {
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 var(--content-padding);
+}
+
+.secondary-navigation .nav {
+  display: flex;
+  gap: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.secondary-navigation .nav-link {
+  padding: 0.75rem 1rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  height: auto;
+}
+
+.secondary-navigation .nav-link:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.secondary-navigation .nav-link.active {
+  color: var(--moodle-primary);
+  border-bottom-color: var(--moodle-primary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Block Styles (Right drawer widgets)
+   ============================================================ */
+
+.block {
+  margin-bottom: 1rem;
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.block-content {
+  padding: 0.75rem 0;
+}
+
+/* ============================================================
+   Responsive Design (matching Moodle breakpoints)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .drawers.drawer-open-left {
+    margin-left: 0;
+  }
+
+  .drawers.drawer-open-right {
+    margin-right: 0;
+  }
+
+  .drawer-left {
+    width: 100%;
+    max-width: 285px;
+    z-index: 1040;
+    box-shadow: var(--shadow-dropdown);
+  }
+
+  .drawer-right {
+    width: 100%;
+    max-width: 315px;
+    z-index: 1040;
+    box-shadow: var(--shadow-dropdown);
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-nav.primary-nav {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Progress Bar (Moodle course progress)
+   ============================================================ */
+
+.progress-moodle {
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-moodle {
+  height: 100%;
+  background-color: var(--moodle-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ============================================================
+   Notification Badge
+   ============================================================ */
+
+.badge-moodle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background-color: var(--moodle-danger);
+  border-radius: 50rem;
+}
+
+/* ============================================================
+   Toast Notifications (Moodle style)
+   ============================================================ */
+
+.toast-container {
+  position: fixed;
+  top: calc(var(--navbar-height) + 0.5rem);
+  right: 1rem;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  min-width: 300px;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-dropdown);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

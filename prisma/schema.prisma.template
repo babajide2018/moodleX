@@ -1,0 +1,734 @@
+// MoodleX - Prisma Schema
+// Supports: PostgreSQL, MySQL, MariaDB, SQLite, SQL Server
+// Default: PostgreSQL (configurable via DATABASE_PROVIDER env var)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// NOTE: To switch database providers, change the provider below.
+// Supported: "postgresql", "mysql", "sqlite", "sqlserver"
+// The setup wizard will update this automatically.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// USERS & AUTHENTICATION
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  emailVerified DateTime?
+  password      String
+  firstname     String
+  lastname      String
+  role          String    @default("student") // admin, coursecreator, editingteacher, teacher, student, guest
+  avatar        String?
+  city          String?
+  country       String?
+  timezone      String    @default("UTC")
+  description   String?   @db.Text
+  institution   String?
+  department    String?
+  phone1        String?
+  phone2        String?
+  firstaccess   DateTime?
+  lastaccess    DateTime?
+  lastlogin     DateTime?
+  currentlogin  DateTime?
+  confirmed     Boolean   @default(false)
+  suspended     Boolean   @default(false)
+  deleted       Boolean   @default(false)
+  lang          String    @default("en")
+  theme         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts       Account[]
+  sessions       Session[]
+  enrollments    Enrollment[]
+  submissions    AssignmentSubmission[]
+  quizAttempts   QuizAttempt[]
+  grades         Grade[]
+  gradesgiven    Grade[]        @relation("GradedBy")
+  sentMessages   Message[]      @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  notifications  Notification[]
+  calendarEvents CalendarEvent[]
+  files          FileRecord[]
+  blogPosts      BlogPost[]
+  badgesIssued   BadgeIssued[]
+  forumPosts     ForumPost[]
+  forumDiscussions ForumDiscussion[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// COURSE CATEGORIES & COURSES
+// ============================================================
+
+model CourseCategory {
+  id          String   @id @default(cuid())
+  name        String
+  idnumber    String?
+  description String?  @db.Text
+  parentId    String?
+  sortorder   Int      @default(0)
+  visible     Boolean  @default(true)
+  depth       Int      @default(0)
+  path        String   @default("/")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   CourseCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children CourseCategory[] @relation("CategoryHierarchy")
+  courses  Course[]
+
+  @@index([parentId])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  fullname    String
+  shortname   String   @unique
+  idnumber    String?
+  summary     String?  @db.Text
+  categoryId  String
+  format      String   @default("topics") // topics, weeks, social, singleactivity
+  numsections Int      @default(10)
+  startdate   DateTime @default(now())
+  enddate     DateTime?
+  visible     Boolean  @default(true)
+  image       String?
+  lang        String?
+  maxbytes    Int      @default(0) // 0 = use site default
+  showgrades  Boolean  @default(true)
+  showreports Boolean  @default(false)
+  showactivitydates Boolean @default(true)
+  enablecompletion Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category    CourseCategory @relation(fields: [categoryId], references: [id])
+  sections    CourseSection[]
+  enrollments Enrollment[]
+  gradeItems  GradeItem[]
+  calendarEvents CalendarEvent[]
+  badges      Badge[]
+
+  @@index([categoryId])
+  @@index([shortname])
+}
+
+// ============================================================
+// COURSE SECTIONS & MODULES
+// ============================================================
+
+model CourseSection {
+  id        String   @id @default(cuid())
+  courseId   String
+  name      String?
+  summary   String?  @db.Text
+  section   Int      // section number (0 = general)
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  modules CourseModule[]
+
+  @@unique([courseId, section])
+  @@index([courseId])
+}
+
+model CourseModule {
+  id               String   @id @default(cuid())
+  courseId          String
+  sectionId        String
+  moduleType       String   // assign, quiz, forum, resource, etc.
+  name             String
+  description      String?  @db.Text
+  visible          Boolean  @default(true)
+  indent           Int      @default(0)
+  sortorder        Int      @default(0)
+  completionEnabled Boolean @default(false)
+  completionView   Boolean  @default(false) // complete on view
+  availability     String?  @db.Text // JSON conditions
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  section     CourseSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  assignment  Assignment?
+  quiz        Quiz?
+  forum       Forum?
+  resource    Resource?
+  urlModule   UrlModule?
+  pageModule  PageModule?
+  labelModule LabelModule?
+  completions ModuleCompletion[]
+
+  @@index([courseId])
+  @@index([sectionId])
+  @@index([moduleType])
+}
+
+model ModuleCompletion {
+  id        String   @id @default(cuid())
+  moduleId  String
+  userId    String
+  state     String   @default("incomplete") // incomplete, complete, complete_pass, complete_fail
+  viewed    Boolean  @default(false)
+  overrideby String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, userId])
+}
+
+// ============================================================
+// ENROLLMENT
+// ============================================================
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String
+  role      String   @default("student")
+  status    String   @default("active") // active, suspended
+  enrolMethod String @default("manual") // manual, self, cohort
+  timestart DateTime?
+  timeend   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+// ============================================================
+// ASSIGNMENTS
+// ============================================================
+
+model Assignment {
+  id                 String   @id @default(cuid())
+  moduleId           String   @unique
+  duedate            DateTime?
+  cutoffdate         DateTime?
+  allowsubmissionsfromdate DateTime?
+  gradingType        String   @default("point") // point, scale, none
+  maxGrade           Float    @default(100)
+  submissionTypes    String   @default("onlinetext,file") // comma-separated
+  maxFileSubmissions Int      @default(1)
+  maxFileSize        Int      @default(0) // bytes, 0 = use course default
+  allowLateSubmissions Boolean @default(false)
+  teamSubmission     Boolean  @default(false)
+  requireSubmissionStatement Boolean @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  module      CourseModule           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(cuid())
+  assignmentId String
+  userId       String
+  status       String   @default("draft") // draft, submitted, graded
+  submissionText String?  @db.Text
+  attemptnumber Int     @default(0)
+  submittedAt  DateTime?
+  grade        Float?
+  feedback     String?  @db.Text
+  gradedBy     String?
+  gradedAt     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignment Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files      FileRecord[]
+
+  @@index([assignmentId])
+  @@index([userId])
+}
+
+// ============================================================
+// QUIZZES
+// ============================================================
+
+model Quiz {
+  id               String   @id @default(cuid())
+  moduleId         String   @unique
+  timeopen         DateTime?
+  timeclose        DateTime?
+  timelimit        Int?     // seconds
+  attempts         Int      @default(0) // 0 = unlimited
+  grademethod      String   @default("highest") // highest, average, first, last
+  maxGrade         Float    @default(100)
+  shuffleQuestions Boolean  @default(false)
+  shuffleAnswers   Boolean  @default(true)
+  questionsPerPage Int      @default(1)
+  navmethod        String   @default("free") // free, sequential
+  reviewAttempt    String   @default("immediately") // immediately, open, closed, never
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  module    CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts_ QuizAttempt[]  @relation("QuizAttempts")
+}
+
+model QuizQuestion {
+  id           String   @id @default(cuid())
+  quizId       String
+  questionType String   // multichoice, truefalse, shortanswer, essay, etc.
+  questionText String   @db.Text
+  defaultMark  Float    @default(1)
+  sortorder    Int      @default(0)
+  feedback     String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@index([quizId])
+}
+
+model QuizAnswer {
+  id         String @id @default(cuid())
+  questionId String
+  answerText String   @db.Text
+  fraction   Float  @default(0) // 0 to 1, 1 = correct
+  feedback   String?  @db.Text
+  sortorder  Int    @default(0)
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuizAttempt {
+  id         String   @id @default(cuid())
+  quizId     String
+  userId     String
+  attempt    Int      @default(1)
+  state      String   @default("inprogress") // inprogress, finished, abandoned
+  sumgrades  Float?
+  timestart  DateTime @default(now())
+  timefinish DateTime?
+  layout     String?  @db.Text // question order
+  createdAt  DateTime @default(now())
+
+  quiz     Quiz                  @relation("QuizAttempts", fields: [quizId], references: [id], onDelete: Cascade)
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses QuizAttemptResponse[]
+
+  @@index([quizId])
+  @@index([userId])
+}
+
+model QuizAttemptResponse {
+  id         String  @id @default(cuid())
+  attemptId  String
+  questionId String
+  response   String?  @db.Text
+  mark       Float?
+  flagged    Boolean @default(false)
+
+  attempt QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+}
+
+// ============================================================
+// FORUMS
+// ============================================================
+
+model Forum {
+  id          String   @id @default(cuid())
+  moduleId    String   @unique
+  forumType   String   @default("general") // general, news, qanda, social, blog
+  maxbytes    Int      @default(0)
+  maxattachments Int   @default(1)
+  trackingtype String  @default("optional") // off, optional, forced
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module      CourseModule      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  discussions ForumDiscussion[]
+}
+
+model ForumDiscussion {
+  id        String   @id @default(cuid())
+  forumId   String
+  name      String
+  userId    String
+  pinned    Boolean  @default(false)
+  locked    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  forum Forum       @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id])
+  posts ForumPost[]
+
+  @@index([forumId])
+}
+
+model ForumPost {
+  id           String   @id @default(cuid())
+  discussionId String
+  parentId     String?
+  userId       String
+  subject      String
+  message      String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  discussion ForumDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id])
+  parent     ForumPost?      @relation("PostReplies", fields: [parentId], references: [id])
+  replies    ForumPost[]     @relation("PostReplies")
+
+  @@index([discussionId])
+  @@index([parentId])
+}
+
+// ============================================================
+// RESOURCES & CONTENT MODULES
+// ============================================================
+
+model Resource {
+  id       String @id @default(cuid())
+  moduleId String @unique
+  fileId   String?
+  display  String @default("automatic") // automatic, embed, frame, new, force, open
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model UrlModule {
+  id       String @id @default(cuid())
+  moduleId String @unique
+  externalUrl String
+  display  String @default("automatic")
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model PageModule {
+  id       String @id @default(cuid())
+  moduleId String @unique
+  content  String   @db.Text
+  display  String @default("automatic")
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model LabelModule {
+  id       String @id @default(cuid())
+  moduleId String @unique
+  content  String   @db.Text
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// GRADES
+// ============================================================
+
+model GradeItem {
+  id          String   @id @default(cuid())
+  courseId     String
+  categoryId  String?
+  itemType    String   // mod, manual, course, category
+  itemModule  String?  // assign, quiz, etc.
+  itemInstance String? // module id
+  itemName    String
+  gradeType   String   @default("value") // value, scale, text, none
+  gradeMax    Float    @default(100)
+  gradeMin    Float    @default(0)
+  gradePass   Float    @default(0)
+  multfactor  Float    @default(1)
+  plusfactor   Float    @default(0)
+  sortorder   Int      @default(0)
+  hidden      Boolean  @default(false)
+  locked      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  grades  Grade[]
+
+  @@index([courseId])
+}
+
+model Grade {
+  id          String   @id @default(cuid())
+  itemId      String
+  userId      String
+  rawgrade    Float?
+  rawgrademax Float    @default(100)
+  rawgrademin Float    @default(0)
+  finalgrade  Float?
+  feedback    String?  @db.Text
+  feedbackformat Int   @default(0)
+  information String?  @db.Text
+  gradedBy    String?
+  overridden  Boolean  @default(false)
+  excluded    Boolean  @default(false)
+  hidden      Boolean  @default(false)
+  locked      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  item     GradeItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grader   User?     @relation("GradedBy", fields: [gradedBy], references: [id])
+
+  @@unique([itemId, userId])
+  @@index([userId])
+  @@index([itemId])
+}
+
+// ============================================================
+// FILES
+// ============================================================
+
+model FileRecord {
+  id          String   @id @default(cuid())
+  filename    String
+  filepath    String
+  filesize    Int
+  mimetype    String
+  userId      String
+  component   String   // course, assignment, forum, etc.
+  filearea    String   // content, submission, attachment
+  contextId   String?
+  contenthash String?
+  url         String
+  submissionId String?
+  createdAt   DateTime @default(now())
+
+  user       User                  @relation(fields: [userId], references: [id])
+  submission AssignmentSubmission? @relation(fields: [submissionId], references: [id])
+
+  @@index([userId])
+  @@index([component, filearea])
+}
+
+// ============================================================
+// MESSAGING & NOTIFICATIONS
+// ============================================================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  type      String   @default("individual") // individual, group
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+  members  ConversationMember[]
+}
+
+model ConversationMember {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  receiverId     String?
+  content        String   @db.Text
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
+  receiver     User?        @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  component   String   // mod_assign, mod_quiz, core, etc.
+  eventType   String   // submission_graded, quiz_due, etc.
+  subject     String
+  fullMessage String   @db.Text
+  smallMessage String?
+  contextUrl  String?
+  contextUrlName String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ============================================================
+// CALENDAR
+// ============================================================
+
+model CalendarEvent {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?  @db.Text
+  eventType    String   @default("user") // site, course, group, user
+  courseId      String?
+  userId       String?
+  groupId      String?
+  timestart    DateTime
+  timeduration Int      @default(0) // seconds
+  visible      Boolean  @default(true)
+  uuid         String?
+  sequence     Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([eventType])
+}
+
+// ============================================================
+// BADGES
+// ============================================================
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  image       String
+  courseId     String?
+  type        String   @default("course") // site, course
+  status      String   @default("active") // active, inactive
+  issuername  String   @default("MoodleX")
+  issuerurl   String?
+  expiredate  DateTime?
+  criteria    String   @db.Text // JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  Course?       @relation(fields: [courseId], references: [id])
+  issued  BadgeIssued[]
+
+  @@index([courseId])
+}
+
+model BadgeIssued {
+  id        String   @id @default(cuid())
+  badgeId   String
+  userId    String
+  issuedOn  DateTime @default(now())
+  expires   DateTime?
+  visible   Boolean  @default(true)
+
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([badgeId, userId])
+}
+
+// ============================================================
+// BLOG
+// ============================================================
+
+model BlogPost {
+  id           String   @id @default(cuid())
+  userId       String
+  subject      String
+  summary      String   @db.Text
+  content      String   @db.Text
+  publishState String   @default("draft") // draft, site, public
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([publishState])
+}
+
+// ============================================================
+// SITE CONFIGURATION
+// ============================================================
+
+model SiteConfig {
+  id                String   @id @default(cuid())
+  name              String
+  value             String   @db.Text
+  plugin            String   @default("core")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([name, plugin])
+}
