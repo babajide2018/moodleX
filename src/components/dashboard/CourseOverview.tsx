@@ -14,6 +14,8 @@ import {
   EyeOff,
   Download,
 } from 'lucide-react';
+import CoursePlaceholderImage from '@/components/course/CoursePlaceholderImage';
+import { getCourseColor } from '@/lib/course-colors';
 
 type ViewMode = 'card' | 'list' | 'summary';
 type SortOption = 'lastaccessed' | 'title' | 'shortname';
@@ -28,16 +30,6 @@ interface CourseCardData {
   progress?: number;
   isFavourite?: boolean;
   lastAccessed?: string;
-}
-
-const courseColors = [
-  '#4e6e9c', '#57a89a', '#7b62a8', '#ce5f5f',
-  '#e8a54b', '#63a563', '#8e6e4e', '#5c8a8a',
-];
-
-function getCourseColor(id: string): string {
-  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return courseColors[hash % courseColors.length];
 }
 
 const groupOptions = [
@@ -189,14 +181,15 @@ export default function CourseOverview() {
           <div className="relative">
             <input
               type="text"
-              className="form-control text-xs py-1 pl-7 w-40"
+              className="form-control text-xs py-1 w-40"
+              style={{ paddingLeft: '2rem' }}
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Search
-              size={12}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
             />
           </div>
 
@@ -311,17 +304,17 @@ function CourseCard({ course }: { course: CourseCardData }) {
   return (
     <div className="card-moodle group relative">
       <Link href={`/course/${course.id}`} className="no-underline">
-        {/* Course image / color placeholder */}
-        <div
-          className="card-img-top flex items-end justify-between p-3"
-          style={{
-            backgroundColor: course.image ? undefined : getCourseColor(course.id),
-            backgroundImage: course.image ? `url(${course.image})` : undefined,
-            backgroundSize: 'cover',
-          }}
-        >
+        <div className="relative">
+          <CoursePlaceholderImage
+            courseId={course.id}
+            category={course.category}
+            className="card-img-top"
+            size="md"
+          />
           {course.isFavourite && (
-            <Star size={16} className="text-yellow-400 fill-yellow-400" />
+            <div className="absolute top-2 left-2">
+              <Star size={16} className="text-yellow-400 fill-yellow-400 drop-shadow" />
+            </div>
           )}
         </div>
 
@@ -397,11 +390,13 @@ function CourseListItem({ course }: { course: CourseCardData }) {
 function CourseSummaryItem({ course }: { course: CourseCardData }) {
   return (
     <div className="flex gap-4 p-4 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors">
-      {/* Course color block */}
+      {/* Course image block */}
       <Link href={`/course/${course.id}`} className="no-underline flex-shrink-0">
-        <div
+        <CoursePlaceholderImage
+          courseId={course.id}
+          category={course.category}
           className="w-20 h-20 rounded"
-          style={{ backgroundColor: getCourseColor(course.id) }}
+          size="sm"
         />
       </Link>
 

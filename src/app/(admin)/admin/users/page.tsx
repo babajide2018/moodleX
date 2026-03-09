@@ -219,7 +219,8 @@ export default function AdminUsersPage() {
                 <div className="relative flex-1 min-w-[200px] max-w-xs">
                   <input
                     type="text"
-                    className="form-control text-sm pl-8"
+                    className="form-control text-sm"
+                    style={{ paddingLeft: '2rem' }}
                     placeholder="Search users..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}

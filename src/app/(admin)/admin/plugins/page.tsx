@@ -166,7 +166,8 @@ export default function AdminPluginsPage() {
             <div className="relative max-w-xs">
               <input
                 type="text"
-                className="form-control text-sm pl-8"
+                className="form-control text-sm"
+                style={{ paddingLeft: '2rem' }}
                 placeholder="Search plugins..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

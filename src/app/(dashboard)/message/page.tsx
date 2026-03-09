@@ -122,7 +122,8 @@ export default function MessagingPage() {
                   <div className="relative mb-2">
                     <input
                       type="text"
-                      className="form-control text-sm pl-8"
+                      className="form-control text-sm"
+                      style={{ paddingLeft: '2rem' }}
                       placeholder="Search messages..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}

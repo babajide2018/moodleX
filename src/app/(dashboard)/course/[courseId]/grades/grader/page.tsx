@@ -186,7 +186,8 @@ export default function GraderReportPage() {
               <div className="relative">
                 <input
                   type="text"
-                  className="form-control text-sm pl-8 w-56"
+                  className="form-control text-sm w-56"
+                  style={{ paddingLeft: '2rem' }}
                   placeholder="Search students..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

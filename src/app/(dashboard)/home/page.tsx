@@ -7,7 +7,6 @@ import {
   Users,
   MessageSquare,
   Calendar,
-  ChevronRight,
   Newspaper,
   GraduationCap,
   Clock,
@@ -16,12 +15,15 @@ import {
   Search,
   LayoutGrid,
   List,
+  AlignJustify,
   Loader2,
   Award,
   FileText,
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import SecondaryNavigation from '@/components/layout/SecondaryNavigation';
+import CoursePlaceholderImage from '@/components/course/CoursePlaceholderImage';
+import { getCourseColor } from '@/lib/course-colors';
 import { useDrawerStore } from '@/store/drawer';
 
 // --- Types ---
@@ -72,16 +74,6 @@ interface SiteStats {
 
 // --- Helpers ---
 
-const courseColors = [
-  '#4e6e9c', '#57a89a', '#7b62a8', '#ce5f5f',
-  '#e8a54b', '#63a563', '#8e6e4e', '#5c8a8a',
-];
-
-function getCourseColor(id: string): string {
-  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return courseColors[hash % courseColors.length];
-}
-
 function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -96,7 +88,7 @@ const homeTabs = [
   { key: 'mycourses', label: 'My courses', href: '/my/courses' },
 ];
 
-type CourseViewMode = 'list' | 'grid';
+type CourseViewMode = 'card' | 'list' | 'summary';
 
 // --- Loading spinner component ---
 
@@ -112,7 +104,7 @@ function SectionSpinner() {
 
 export default function SiteHomePage() {
   const { editMode } = useDrawerStore();
-  const [courseView, setCourseView] = useState<CourseViewMode>('list');
+  const [courseView, setCourseView] = useState<CourseViewMode>('card');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -367,25 +359,30 @@ export default function SiteHomePage() {
                     placeholder="Search courses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-sm border border-[var(--border-color)] rounded bg-white text-[var(--text-primary)]"
+                    className="pr-3 py-1.5 text-sm border border-[var(--border-color)] rounded bg-white text-[var(--text-primary)]"
+                    style={{ paddingLeft: '2rem' }}
                   />
                 </div>
 
                 <div className="flex border border-[var(--border-color)] rounded overflow-hidden">
-                  <button
-                    onClick={() => setCourseView('list')}
-                    className={`p-1.5 border-none cursor-pointer ${courseView === 'list' ? 'bg-[var(--moodle-primary)] text-white' : 'bg-white text-[var(--text-secondary)]'}`}
-                    title="List view"
-                  >
-                    <List size={16} />
-                  </button>
-                  <button
-                    onClick={() => setCourseView('grid')}
-                    className={`p-1.5 border-none cursor-pointer ${courseView === 'grid' ? 'bg-[var(--moodle-primary)] text-white' : 'bg-white text-[var(--text-secondary)]'}`}
-                    title="Grid view"
-                  >
-                    <LayoutGrid size={16} />
-                  </button>
+                  {([
+                    { mode: 'card' as CourseViewMode, icon: LayoutGrid, title: 'Card' },
+                    { mode: 'list' as CourseViewMode, icon: List, title: 'List' },
+                    { mode: 'summary' as CourseViewMode, icon: AlignJustify, title: 'Summary' },
+                  ]).map(({ mode, icon: Icon, title }, i) => (
+                    <button
+                      key={mode}
+                      className={`p-1.5 border-none cursor-pointer ${i > 0 ? 'border-l border-[var(--border-color)]' : ''} ${
+                        courseView === mode
+                          ? 'bg-[var(--moodle-primary)] text-white'
+                          : 'bg-white text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                      }`}
+                      onClick={() => setCourseView(mode)}
+                      title={`${title} view`}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -396,40 +393,91 @@ export default function SiteHomePage() {
               <div className="text-center py-8 text-sm text-[var(--text-secondary)]">
                 No courses available yet.
               </div>
+            ) : courseView === 'card' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredCourses.map((course) => (
+                  <div key={course.id} className="card-moodle group relative">
+                    <Link href={`/course/${course.id}`} className="no-underline">
+                      <CoursePlaceholderImage
+                        courseId={course.id}
+                        category={course.category}
+                        className="card-img-top"
+                        size="md"
+                      />
+                      <div className="card-body pb-2">
+                        <p className="text-xs text-[var(--text-muted)] mb-0.5 uppercase tracking-wide">
+                          {course.shortname}
+                        </p>
+                        <h6 className="card-title text-sm group-hover:text-[var(--moodle-primary)] transition-colors line-clamp-2 mb-1">
+                          {course.fullname}
+                        </h6>
+                        <p className="card-text text-xs mb-0">{course.category}</p>
+                      </div>
+                    </Link>
+                    <div className="px-4 pb-3 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                      {course.teachers && course.teachers.length > 0 ? (
+                        <span className="flex items-center gap-1">
+                          <User size={11} />
+                          {course.teachers[0]}
+                        </span>
+                      ) : <span />}
+                      {course.studentCount != null && course.studentCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users size={11} />
+                          {course.studentCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : courseView === 'list' ? (
-              <div>
-                {filteredCourses.map((course, index) => (
-                  <Link
+              <div className="space-y-1">
+                {filteredCourses.map((course) => (
+                  <div
                     key={course.id}
-                    href={`/course/${course.id}`}
-                    className={`flex gap-4 p-3 hover:bg-[var(--bg-light)] transition-colors group no-underline ${
-                      index < filteredCourses.length - 1 ? 'border-b border-[var(--border-color)]' : ''
-                    }`}
+                    className="flex items-center gap-3 p-3 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors"
                   >
                     <div
-                      className="w-14 h-14 rounded flex-shrink-0 flex items-center justify-center"
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: getCourseColor(course.id) }}
-                    >
-                      <BookOpen size={22} className="text-white opacity-80" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className="text-sm font-semibold m-0 mb-0.5 group-hover:underline text-[var(--moodle-primary)]">
-                            {course.fullname}
-                          </h4>
-                          <span className="text-xs text-[var(--text-muted)]">
-                            {course.shortname} &middot; {course.category}
-                          </span>
-                        </div>
-                        <ChevronRight
-                          size={16}
-                          className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-secondary)]"
-                        />
-                      </div>
+                    />
+                    <Link href={`/course/${course.id}`} className="flex-1 min-w-0 no-underline">
+                      <span className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--moodle-primary)]">
+                        {course.fullname}
+                      </span>
+                    </Link>
+                    <span className="text-xs text-[var(--text-muted)] flex-shrink-0">{course.category}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="flex gap-4 p-4 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors"
+                  >
+                    <Link href={`/course/${course.id}`} className="no-underline flex-shrink-0">
+                      <CoursePlaceholderImage
+                        courseId={course.id}
+                        category={course.category}
+                        className="w-20 h-20 rounded"
+                        size="sm"
+                      />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[var(--text-muted)] mb-0.5 uppercase tracking-wide">
+                        {course.shortname}
+                      </p>
+                      <Link href={`/course/${course.id}`} className="no-underline">
+                        <h6 className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--moodle-primary)] mb-1">
+                          {course.fullname}
+                        </h6>
+                      </Link>
+                      <p className="text-xs text-[var(--text-muted)] mb-0">{course.category}</p>
                       {course.summary && (
-                        <p className="text-sm m-0 mt-1 line-clamp-2 text-[var(--text-secondary)]">
+                        <p className="text-xs m-0 mt-1 line-clamp-2 text-[var(--text-secondary)]">
                           {course.summary}
                         </p>
                       )}
@@ -448,52 +496,7 @@ export default function SiteHomePage() {
                         )}
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCourses.map((course) => (
-                  <Link
-                    key={course.id}
-                    href={`/course/${course.id}`}
-                    className="block border border-[var(--border-color)] rounded-lg overflow-hidden hover:shadow-md transition-shadow group no-underline"
-                  >
-                    <div
-                      className="h-24 flex items-center justify-center"
-                      style={{ backgroundColor: getCourseColor(course.id) }}
-                    >
-                      <BookOpen size={32} className="text-white opacity-60" />
-                    </div>
-
-                    <div className="p-3">
-                      <span className="text-xs font-medium mb-1 block text-[var(--text-muted)]">
-                        {course.shortname} &middot; {course.category}
-                      </span>
-                      <h4 className="text-sm font-semibold m-0 mb-1 group-hover:underline line-clamp-2 text-[var(--moodle-primary)]">
-                        {course.fullname}
-                      </h4>
-                      {course.summary && (
-                        <p className="text-xs m-0 mb-2 line-clamp-2 text-[var(--text-secondary)]">
-                          {course.summary}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-xs pt-2 border-t border-[var(--border-color)] text-[var(--text-muted)]">
-                        {course.teachers && course.teachers.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            <User size={11} />
-                            {course.teachers[0]}
-                          </span>
-                        )}
-                        {course.studentCount != null && course.studentCount > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Users size={11} />
-                            {course.studentCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

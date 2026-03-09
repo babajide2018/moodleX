@@ -154,12 +154,13 @@ export default function ForumPage() {
               <div className="relative">
                 <input
                   type="text"
-                  className="form-control text-sm py-1 pl-7 w-48"
+                  className="form-control text-sm py-1 w-48"
+                  style={{ paddingLeft: '2rem' }}
                   placeholder="Search forums..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
               </div>
 
               <select

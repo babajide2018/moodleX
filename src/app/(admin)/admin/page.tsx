@@ -104,7 +104,8 @@ export default function AdminPage() {
             <div className="relative max-w-md">
               <input
                 type="text"
-                className="form-control pl-10"
+                className="form-control"
+                style={{ paddingLeft: '2.5rem' }}
                 placeholder="Search settings..."
               />
               <svg
