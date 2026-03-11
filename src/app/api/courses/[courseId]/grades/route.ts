@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { logEvent } from '@/lib/logger';
 
 /**
  * GET /api/courses/[courseId]/grades
@@ -127,6 +128,18 @@ export async function GET(
         user: grade.user,
       })),
     }));
+
+    // Log gradebook view
+    logEvent({
+      eventName: 'gradebook_viewed',
+      component: 'gradereport',
+      action: 'viewed',
+      target: 'grade_report',
+      courseId,
+      userId: session.user.id,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      description: `The user viewed the gradebook for '${course.shortname}'.`,
+    });
 
     return NextResponse.json({
       course: {

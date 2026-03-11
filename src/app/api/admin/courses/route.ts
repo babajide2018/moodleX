@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
       maxbytes = 0,
       showactivitydates = true,
       enablecompletion = true,
+      image,
     } = body;
 
     if (!fullname || typeof fullname !== 'string' || fullname.trim().length === 0) {
@@ -150,6 +151,18 @@ export async function POST(request: NextRequest) {
         maxbytes,
         showactivitydates,
         enablecompletion,
+        image: image || null,
+      },
+    });
+
+    // Auto-enroll the creator as editing teacher
+    await prisma.enrollment.create({
+      data: {
+        userId: session.user.id,
+        courseId: course.id,
+        role: 'editingteacher',
+        status: 'active',
+        enrolMethod: 'manual',
       },
     });
 

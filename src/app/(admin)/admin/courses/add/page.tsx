@@ -148,6 +148,19 @@ function AddCoursePageInner() {
 
     setLoading(true);
     try {
+      // Upload image first if one was selected
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('folder', 'courses');
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = uploadData.url;
+        }
+      }
+
       const res = await fetch('/api/admin/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,6 +173,7 @@ function AddCoursePageInner() {
           enddate: enddateEnabled && enddate ? enddate : null,
           idnumber: idnumber.trim() || null,
           summary: summary.trim() || null,
+          image: imageUrl,
           format,
           numsections,
           lang: lang || null,
@@ -182,7 +196,7 @@ function AddCoursePageInner() {
         if (action === 'display' && data.course?.id) {
           router.push(`/course/${data.course.id}`);
         } else {
-          router.push('/admin/courses/manage');
+          router.push(`/admin/courses/manage${categoryId ? `?category=${categoryId}` : ''}`);
         }
       }, 1000);
     } catch {
@@ -352,7 +366,7 @@ function AddCoursePageInner() {
                   ) : (
                     <>
                       <p className="text-sm text-[var(--text-muted)]">Drag and drop an image here, or click to browse.</p>
-                      <button type="button" className="btn btn-secondary text-sm mt-2" onClick={() => fileInputRef.current?.click()}>Choose a file</button>
+                      <button type="button" className="btn btn-secondary text-sm mt-2" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose a file</button>
                     </>
                   )}
                   <input

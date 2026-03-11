@@ -1,30 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import CoursePlaceholderImage from '@/components/course/CoursePlaceholderImage';
 
 interface RecentCourse {
   id: string;
   fullname: string;
   shortname: string;
+  category?: string;
   image?: string;
-}
-
-const courseColors = [
-  '#4e6e9c', '#57a89a', '#7b62a8', '#ce5f5f',
-  '#e8a54b', '#63a563', '#8e6e4e', '#5c8a8a',
-];
-
-function getCourseColor(id: string): string {
-  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return courseColors[hash % courseColors.length];
 }
 
 export default function RecentlyAccessedCourses() {
   const [courses, setCourses] = useState<RecentCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scrollIndex, setScrollIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     async function fetchCourses() {
@@ -37,6 +31,7 @@ export default function RecentlyAccessedCourses() {
               id: c.id,
               fullname: c.fullname,
               shortname: c.shortname,
+              category: c.category,
               image: c.image,
             }))
           );
@@ -50,12 +45,35 @@ export default function RecentlyAccessedCourses() {
     fetchCourses();
   }, []);
 
+  const updateScrollState = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    window.addEventListener('resize', updateScrollState);
+    return () => window.removeEventListener('resize', updateScrollState);
+  }, [courses]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.clientWidth / 3;
+    el.scrollBy({
+      left: direction === 'left' ? -cardWidth : cardWidth,
+      behavior: 'smooth',
+    });
+  };
+
   if (loading) {
     return (
       <div className="mb-6">
-        <h5 className="text-base font-semibold mb-3">Recently accessed courses</h5>
+        <h5 className="text-base font-semibold mb-3 text-gray-900">Recently accessed courses</h5>
         <div className="text-center py-4">
-          <Loader2 size={20} className="animate-spin mx-auto text-[var(--text-muted)]" />
+          <Loader2 size={20} className="animate-spin mx-auto text-gray-400" />
         </div>
       </div>
     );
@@ -64,59 +82,77 @@ export default function RecentlyAccessedCourses() {
   if (courses.length === 0) {
     return (
       <div className="mb-6">
-        <h5 className="text-base font-semibold mb-3">Recently accessed courses</h5>
-        <div className="border border-[var(--border-color)] rounded p-4 text-center text-sm text-[var(--text-muted)]">
+        <h5 className="text-base font-semibold mb-3 text-gray-900">Recently accessed courses</h5>
+        <div className="border border-gray-200 rounded p-4 text-center text-sm text-gray-500">
           No recent courses
         </div>
       </div>
     );
   }
 
-  const visibleCount = 4;
-  const canScrollLeft = scrollIndex > 0;
-  const canScrollRight = scrollIndex + visibleCount < courses.length;
-  const visibleCourses = courses.slice(scrollIndex, scrollIndex + visibleCount);
-
   return (
     <div className="mb-6">
+      {/* Header with arrows */}
       <div className="flex items-center justify-between mb-3">
-        <h5 className="text-base font-semibold m-0">Recently accessed courses</h5>
+        <h5 className="text-base font-semibold m-0 text-gray-900">Recently accessed courses</h5>
         <div className="flex gap-1">
           <button
-            className="btn-icon"
+            onClick={() => scroll('left')}
             disabled={!canScrollLeft}
-            onClick={() => setScrollIndex(Math.max(0, scrollIndex - 1))}
+            className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all
+              ${canScrollLeft
+                ? 'border-gray-300 bg-white hover:bg-gray-100 text-gray-600 cursor-pointer'
+                : 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+              }`}
+            aria-label="Scroll left"
           >
-            <ChevronLeft size={16} className={canScrollLeft ? '' : 'opacity-30'} />
+            <ChevronLeft size={14} />
           </button>
           <button
-            className="btn-icon"
+            onClick={() => scroll('right')}
             disabled={!canScrollRight}
-            onClick={() => setScrollIndex(scrollIndex + 1)}
+            className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all
+              ${canScrollRight
+                ? 'border-gray-300 bg-white hover:bg-gray-100 text-gray-600 cursor-pointer'
+                : 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+              }`}
+            aria-label="Scroll right"
           >
-            <ChevronRight size={16} className={canScrollRight ? '' : 'opacity-30'} />
+            <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {visibleCourses.map((course) => (
+      {/* Scrollable course cards */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+        onScroll={updateScrollState}
+      >
+        {courses.map((course) => (
           <Link
             key={course.id}
             href={`/course/${course.id}`}
-            className="no-underline group"
+            className="flex-shrink-0 snap-start no-underline group"
+            style={{ width: 'calc((100% - 1.5rem) / 3)' }}
           >
-            <div className="border border-[var(--border-color)] rounded overflow-hidden hover:shadow-md transition-shadow">
-              <div
-                className="h-16"
-                style={{
-                  backgroundColor: course.image ? undefined : getCourseColor(course.id),
-                  backgroundImage: course.image ? `url(${course.image})` : undefined,
-                  backgroundSize: 'cover',
-                }}
-              />
-              <div className="p-2">
-                <p className="text-xs font-medium text-[var(--text-primary)] group-hover:text-[var(--moodle-primary)] line-clamp-2 m-0">
+            <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
+              {course.image ? (
+                <img
+                  src={course.image}
+                  alt={course.fullname}
+                  className="w-full h-20 object-cover"
+                />
+              ) : (
+                <CoursePlaceholderImage
+                  courseId={course.id}
+                  category={course.category}
+                  className="w-full h-20"
+                  size="sm"
+                />
+              )}
+              <div className="p-2.5">
+                <p className="text-xs font-medium text-gray-800 group-hover:text-blue-600 line-clamp-2 m-0">
                   {course.fullname}
                 </p>
               </div>

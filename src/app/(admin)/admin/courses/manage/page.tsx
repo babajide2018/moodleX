@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import SecondaryNavigation from '@/components/layout/SecondaryNavigation';
@@ -189,10 +190,20 @@ function CourseRow({ course }: { course: Course }) {
   );
 }
 
-export default function ManageCoursesPage() {
+export default function ManageCoursesPageWrapper() {
+  return (
+    <Suspense>
+      <ManageCoursesPage />
+    </Suspense>
+  );
+}
+
+function ManageCoursesPage() {
+  const searchParams = useSearchParams();
+  const initialCategoryId = searchParams.get('category') || '';
   const [categories, setCategories] = useState<CategoryTree[]>([]);
   const [allCourses, setAllCourses] = useState<(Course & { categoryId: string })[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initialCategoryId);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [courseSortBy, setCourseSortBy] = useState<string>('fullname');
   const [loading, setLoading] = useState(true);
@@ -211,9 +222,11 @@ export default function ManageCoursesPage() {
         if (catData.categories) {
           const tree = buildTree(catData.categories);
           setCategories(tree);
-          // Auto-select first category
+          // Auto-select category from URL param, or fall back to first
           const flat = flattenTree(tree);
-          if (flat.length > 0) {
+          if (initialCategoryId && flat.some((c) => c.id === initialCategoryId)) {
+            setSelectedCategoryId(initialCategoryId);
+          } else if (flat.length > 0) {
             setSelectedCategoryId(flat[0].id);
           }
           // Auto-expand top-level categories that have children

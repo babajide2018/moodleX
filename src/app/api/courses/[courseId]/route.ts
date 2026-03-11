@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { logEvent } from '@/lib/logger';
 
 /**
  * GET /api/courses/[courseId]
@@ -73,6 +74,20 @@ export async function GET(
         })),
       })),
     };
+
+    // Log course view
+    logEvent({
+      eventName: 'course_viewed',
+      component: 'core',
+      action: 'viewed',
+      target: 'course',
+      objectTable: 'course',
+      objectId: courseId,
+      courseId,
+      userId: session.user.id,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      description: `The user viewed the course '${course.shortname}'.`,
+    });
 
     return NextResponse.json({ course: result });
   } catch (error) {
@@ -162,6 +177,7 @@ export async function PUT(
       maxbytes,
       showgrades,
       showreports,
+      image,
     } = body;
 
     // Validate shortname uniqueness (excluding current course)
@@ -213,6 +229,7 @@ export async function PUT(
     if (maxbytes !== undefined) updateData.maxbytes = Number(maxbytes);
     if (showgrades !== undefined) updateData.showgrades = Boolean(showgrades);
     if (showreports !== undefined) updateData.showreports = Boolean(showreports);
+    if (image !== undefined) updateData.image = image || null;
 
     const updatedCourse = await prisma.course.update({
       where: { id: courseId },
@@ -222,6 +239,20 @@ export async function PUT(
         },
       },
       data: updateData,
+    });
+
+    // Log course update
+    logEvent({
+      eventName: 'course_updated',
+      component: 'core',
+      action: 'updated',
+      target: 'course',
+      objectTable: 'course',
+      objectId: courseId,
+      courseId,
+      userId: session.user.id,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      description: `The user updated the course settings for '${updatedCourse.shortname}'.`,
     });
 
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { logEvent } from '@/lib/logger';
 
 /**
  * GET /api/courses/[courseId]/participants
@@ -154,6 +155,21 @@ export async function POST(
           },
         },
       },
+    });
+
+    // Log enrollment
+    logEvent({
+      eventName: 'user_enrolled',
+      component: 'core',
+      action: 'created',
+      target: 'user_enrolment',
+      objectTable: 'enrollment',
+      objectId: enrollment.id,
+      courseId,
+      userId: session.user.id,
+      relatedUserId: userId,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      description: `The user enrolled '${enrollment.user.firstname} ${enrollment.user.lastname}' in the course.`,
     });
 
     return NextResponse.json(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import SecondaryNavigation from '@/components/layout/SecondaryNavigation';
@@ -128,6 +128,11 @@ export default function EditCoursePage() {
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     fullname: '',
     shortname: '',
@@ -195,6 +200,10 @@ export default function EditCoursePage() {
         const courseData = await responses[1].json();
         const course: CourseData = courseData.course;
 
+        if (course.image) {
+          setExistingImage(course.image);
+        }
+
         setForm({
           fullname: course.fullname,
           shortname: course.shortname,
@@ -255,7 +264,20 @@ export default function EditCoursePage() {
     setSaveMessage(null);
 
     try {
-      const body = {
+      // Upload new image if selected
+      let imageUrl: string | null | undefined = undefined;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('folder', 'courses');
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = uploadData.url;
+        }
+      }
+
+      const body: Record<string, unknown> = {
         fullname: form.fullname.trim(),
         shortname: form.shortname.trim(),
         idnumber: form.idnumber.trim() || null,
@@ -273,6 +295,10 @@ export default function EditCoursePage() {
         showgrades: form.showgrades,
         showreports: form.showreports,
       };
+
+      if (imageUrl !== undefined) {
+        body.image = imageUrl;
+      }
 
       const res = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
@@ -533,12 +559,54 @@ export default function EditCoursePage() {
                 help="An image displayed in the course overview. If not provided, a default placeholder will be used."
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-32 h-20 bg-[var(--bg-light)] border border-dashed border-[var(--border-color)] rounded flex items-center justify-center text-xs text-[var(--text-muted)]">
-                    No image
+                  {imagePreview || existingImage ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview || existingImage || ''}
+                        alt="Course preview"
+                        className="w-32 h-20 object-cover rounded border border-[var(--border-color)]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-32 h-20 bg-[var(--bg-light)] border border-dashed border-[var(--border-color)] rounded flex items-center justify-center text-xs text-[var(--text-muted)]">
+                      No image
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      className="btn btn-secondary text-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Choose a file...
+                    </button>
+                    {(imagePreview || existingImage) && (
+                      <button
+                        type="button"
+                        className="text-xs text-[var(--moodle-danger)] hover:underline text-left"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                          setExistingImage(null);
+                        }}
+                      >
+                        Remove image
+                      </button>
+                    )}
                   </div>
-                  <button type="button" className="btn btn-secondary text-sm">
-                    Choose a file...
-                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && file.type.startsWith('image/')) {
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
                 </div>
               </FormField>
             </FormSection>

@@ -93,6 +93,17 @@ export default function ActivityChooserModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Type-specific fields
+  const [duedate, setDuedate] = useState('');
+  const [maxGrade, setMaxGrade] = useState('100');
+  const [submissionTypes, setSubmissionTypes] = useState('onlinetext,file');
+  const [timeclose, setTimeclose] = useState('');
+  const [timelimit, setTimelimit] = useState('');
+  const [attempts, setAttempts] = useState('0');
+  const [forumType, setForumType] = useState('general');
+  const [externalUrl, setExternalUrl] = useState('');
+  const [content, setContent] = useState('');
+
   if (!isOpen) return null;
 
   const resetForm = () => {
@@ -100,6 +111,15 @@ export default function ActivityChooserModal({
     setName('');
     setDescription('');
     setError(null);
+    setDuedate('');
+    setMaxGrade('100');
+    setSubmissionTypes('onlinetext,file');
+    setTimeclose('');
+    setTimelimit('');
+    setAttempts('0');
+    setForumType('general');
+    setExternalUrl('');
+    setContent('');
   };
 
   const handleClose = () => {
@@ -122,16 +142,47 @@ export default function ActivityChooserModal({
     setError(null);
 
     try {
+      // Build type-specific payload
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: Record<string, any> = {
+        name: name.trim(),
+        moduleType: selectedType.type,
+        description: description.trim() || undefined,
+      };
+
+      switch (selectedType.type) {
+        case 'assign':
+          if (duedate) payload.duedate = duedate;
+          payload.maxGrade = parseFloat(maxGrade) || 100;
+          payload.submissionTypes = submissionTypes;
+          break;
+        case 'quiz':
+          if (timeclose) payload.timeclose = timeclose;
+          if (timelimit) payload.timelimit = parseInt(timelimit);
+          payload.attempts = parseInt(attempts) || 0;
+          payload.maxGrade = parseFloat(maxGrade) || 100;
+          break;
+        case 'forum':
+          payload.forumType = forumType;
+          break;
+        case 'url':
+          payload.externalUrl = externalUrl;
+          break;
+        case 'page':
+        case 'book':
+          payload.content = content;
+          break;
+        case 'label':
+          payload.content = content || description.trim();
+          break;
+      }
+
       const res = await fetch(
         `/api/courses/${courseId}/sections/${sectionId}/modules`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: name.trim(),
-            moduleType: selectedType.type,
-            description: description.trim() || undefined,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -253,9 +304,207 @@ export default function ActivityChooserModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description"
-                  rows={3}
+                  rows={2}
                 />
               </div>
+
+              {/* Assignment-specific fields */}
+              {selectedType.type === 'assign' && (
+                <>
+                  <div className="mb-4">
+                    <label htmlFor="assign-duedate" className="block text-sm font-medium mb-1.5">
+                      Due date
+                    </label>
+                    <input
+                      id="assign-duedate"
+                      type="datetime-local"
+                      className="form-control"
+                      value={duedate}
+                      onChange={(e) => setDuedate(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                      <label htmlFor="assign-grade" className="block text-sm font-medium mb-1.5">
+                        Maximum grade
+                      </label>
+                      <input
+                        id="assign-grade"
+                        type="number"
+                        className="form-control"
+                        value={maxGrade}
+                        onChange={(e) => setMaxGrade(e.target.value)}
+                        min="0"
+                        max="1000"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="assign-submission" className="block text-sm font-medium mb-1.5">
+                        Submission types
+                      </label>
+                      <select
+                        id="assign-submission"
+                        className="form-control"
+                        value={submissionTypes}
+                        onChange={(e) => setSubmissionTypes(e.target.value)}
+                      >
+                        <option value="onlinetext,file">Online text &amp; File</option>
+                        <option value="onlinetext">Online text only</option>
+                        <option value="file">File submissions only</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Quiz-specific fields */}
+              {selectedType.type === 'quiz' && (
+                <>
+                  <div className="mb-4">
+                    <label htmlFor="quiz-close" className="block text-sm font-medium mb-1.5">
+                      Close the quiz
+                    </label>
+                    <input
+                      id="quiz-close"
+                      type="datetime-local"
+                      className="form-control"
+                      value={timeclose}
+                      onChange={(e) => setTimeclose(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div>
+                      <label htmlFor="quiz-timelimit" className="block text-sm font-medium mb-1.5">
+                        Time limit (min)
+                      </label>
+                      <input
+                        id="quiz-timelimit"
+                        type="number"
+                        className="form-control"
+                        value={timelimit}
+                        onChange={(e) => setTimelimit(e.target.value)}
+                        placeholder="No limit"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="quiz-attempts" className="block text-sm font-medium mb-1.5">
+                        Attempts allowed
+                      </label>
+                      <select
+                        id="quiz-attempts"
+                        className="form-control"
+                        value={attempts}
+                        onChange={(e) => setAttempts(e.target.value)}
+                      >
+                        <option value="0">Unlimited</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="quiz-grade" className="block text-sm font-medium mb-1.5">
+                        Maximum grade
+                      </label>
+                      <input
+                        id="quiz-grade"
+                        type="number"
+                        className="form-control"
+                        value={maxGrade}
+                        onChange={(e) => setMaxGrade(e.target.value)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Forum-specific fields */}
+              {selectedType.type === 'forum' && (
+                <div className="mb-4">
+                  <label htmlFor="forum-type" className="block text-sm font-medium mb-1.5">
+                    Forum type
+                  </label>
+                  <select
+                    id="forum-type"
+                    className="form-control"
+                    value={forumType}
+                    onChange={(e) => setForumType(e.target.value)}
+                  >
+                    <option value="general">Standard forum for general use</option>
+                    <option value="news">Announcements</option>
+                    <option value="qanda">Q and A forum</option>
+                    <option value="social">Standard forum displayed in blog-like format</option>
+                    <option value="blog">Each person posts one discussion</option>
+                  </select>
+                </div>
+              )}
+
+              {/* URL-specific fields */}
+              {selectedType.type === 'url' && (
+                <div className="mb-4">
+                  <label htmlFor="url-external" className="block text-sm font-medium mb-1.5">
+                    External URL <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="url-external"
+                    type="url"
+                    className="form-control"
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Page/Book content field */}
+              {(selectedType.type === 'page' || selectedType.type === 'book') && (
+                <div className="mb-4">
+                  <label htmlFor="page-content" className="block text-sm font-medium mb-1.5">
+                    Page content
+                  </label>
+                  <textarea
+                    id="page-content"
+                    className="form-control"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Enter page content (HTML supported)"
+                    rows={6}
+                  />
+                </div>
+              )}
+
+              {/* Label content field */}
+              {selectedType.type === 'label' && (
+                <div className="mb-4">
+                  <label htmlFor="label-content" className="block text-sm font-medium mb-1.5">
+                    Label text <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="label-content"
+                    className="form-control"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Enter text or HTML to display on the course page"
+                    rows={4}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* File upload placeholder */}
+              {selectedType.type === 'resource' && (
+                <div className="mb-4 p-4 border-2 border-dashed border-[var(--border-color)] rounded-lg text-center">
+                  <File size={24} className="mx-auto text-[var(--text-muted)] mb-2" />
+                  <p className="text-sm text-[var(--text-muted)]">
+                    File upload will be available after creating the resource. You can add files from the resource settings page.
+                  </p>
+                </div>
+              )}
             </form>
           )}
         </div>

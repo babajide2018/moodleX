@@ -65,6 +65,7 @@ model User {
   badgesIssued   BadgeIssued[]
   forumPosts     ForumPost[]
   forumDiscussions ForumDiscussion[]
+  logs           LogStore[]     @relation("LogUser")
 
   @@index([email])
   @@index([username])
@@ -159,6 +160,7 @@ model Course {
   gradeItems  GradeItem[]
   calendarEvents CalendarEvent[]
   badges      Badge[]
+  logs        LogStore[]
 
   @@index([categoryId])
   @@index([shortname])
@@ -731,4 +733,35 @@ model SiteConfig {
   updatedAt         DateTime @updatedAt
 
   @@unique([name, plugin])
+}
+
+// ============================================================
+// LOGGING (Standard Log Store - like Moodle's mdl_logstore_standard_log)
+// ============================================================
+
+model LogStore {
+  id          String   @id @default(cuid())
+  eventName   String   // e.g. "course_viewed", "module_viewed", "user_enrolled"
+  component   String   // e.g. "core", "mod_assign", "mod_quiz", "mod_forum"
+  action      String   // e.g. "viewed", "created", "updated", "deleted", "submitted"
+  target      String   // e.g. "course", "course_module", "user_enrolment"
+  objectTable String?  // e.g. "course", "course_modules", "assign_submission"
+  objectId    String?  // ID of the affected object
+  courseId    String?  // Related course ID (null for system-level events)
+  userId      String   // User who performed the action
+  relatedUserId String? // Another user involved (e.g. graded user)
+  contextLevel String  @default("course") // system, course, module, user
+  ip          String?
+  description String?  @db.Text
+  origin      String   @default("web") // web, cli, ws
+  createdAt   DateTime @default(now())
+
+  user    User    @relation("LogUser", fields: [userId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([eventName])
+  @@index([createdAt])
+  @@index([courseId, createdAt])
 }

@@ -398,12 +398,21 @@ export default function SiteHomePage() {
                 {filteredCourses.map((course) => (
                   <div key={course.id} className="card-moodle group relative">
                     <Link href={`/course/${course.id}`} className="no-underline">
-                      <CoursePlaceholderImage
-                        courseId={course.id}
-                        category={course.category}
-                        className="card-img-top"
-                        size="md"
-                      />
+                      {course.image ? (
+                        <img
+                          src={course.image}
+                          alt={course.fullname}
+                          className="card-img-top w-full object-cover"
+                          style={{ height: '140px' }}
+                        />
+                      ) : (
+                        <CoursePlaceholderImage
+                          courseId={course.id}
+                          category={course.category}
+                          className="card-img-top"
+                          size="md"
+                        />
+                      )}
                       <div className="card-body pb-2">
                         <p className="text-xs text-[var(--text-muted)] mb-0.5 uppercase tracking-wide">
                           {course.shortname}
@@ -438,10 +447,18 @@ export default function SiteHomePage() {
                     key={course.id}
                     className="flex items-center gap-3 p-3 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors"
                   >
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: getCourseColor(course.id) }}
-                    />
+                    {course.image ? (
+                      <img
+                        src={course.image}
+                        alt={course.fullname}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: getCourseColor(course.id) }}
+                      />
+                    )}
                     <Link href={`/course/${course.id}`} className="flex-1 min-w-0 no-underline">
                       <span className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--moodle-primary)]">
                         {course.fullname}
@@ -459,12 +476,20 @@ export default function SiteHomePage() {
                     className="flex gap-4 p-4 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors"
                   >
                     <Link href={`/course/${course.id}`} className="no-underline flex-shrink-0">
-                      <CoursePlaceholderImage
-                        courseId={course.id}
-                        category={course.category}
-                        className="w-20 h-20 rounded"
-                        size="sm"
-                      />
+                      {course.image ? (
+                        <img
+                          src={course.image}
+                          alt={course.fullname}
+                          className="w-20 h-20 rounded object-cover"
+                        />
+                      ) : (
+                        <CoursePlaceholderImage
+                          courseId={course.id}
+                          category={course.category}
+                          className="w-20 h-20 rounded"
+                          size="sm"
+                        />
+                      )}
                     </Link>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[var(--text-muted)] mb-0.5 uppercase tracking-wide">

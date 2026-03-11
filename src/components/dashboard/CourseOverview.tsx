@@ -305,12 +305,21 @@ function CourseCard({ course }: { course: CourseCardData }) {
     <div className="card-moodle group relative">
       <Link href={`/course/${course.id}`} className="no-underline">
         <div className="relative">
-          <CoursePlaceholderImage
-            courseId={course.id}
-            category={course.category}
-            className="card-img-top"
-            size="md"
-          />
+          {course.image ? (
+            <img
+              src={course.image}
+              alt={course.fullname}
+              className="card-img-top w-full object-cover"
+              style={{ height: '140px' }}
+            />
+          ) : (
+            <CoursePlaceholderImage
+              courseId={course.id}
+              category={course.category}
+              className="card-img-top"
+              size="md"
+            />
+          )}
           {course.isFavourite && (
             <div className="absolute top-2 left-2">
               <Star size={16} className="text-yellow-400 fill-yellow-400 drop-shadow" />
@@ -354,11 +363,19 @@ function CourseCard({ course }: { course: CourseCardData }) {
 function CourseListItem({ course }: { course: CourseCardData }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors">
-      {/* Color dot */}
-      <div
-        className="w-3 h-3 rounded-full flex-shrink-0"
-        style={{ backgroundColor: getCourseColor(course.id) }}
-      />
+      {/* Course image or color dot */}
+      {course.image ? (
+        <img
+          src={course.image}
+          alt={course.fullname}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        />
+      ) : (
+        <div
+          className="w-3 h-3 rounded-full flex-shrink-0"
+          style={{ backgroundColor: getCourseColor(course.id) }}
+        />
+      )}
 
       <Link href={`/course/${course.id}`} className="flex-1 min-w-0 no-underline">
         <span className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--moodle-primary)]">
@@ -392,12 +409,20 @@ function CourseSummaryItem({ course }: { course: CourseCardData }) {
     <div className="flex gap-4 p-4 rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition-colors">
       {/* Course image block */}
       <Link href={`/course/${course.id}`} className="no-underline flex-shrink-0">
-        <CoursePlaceholderImage
-          courseId={course.id}
-          category={course.category}
-          className="w-20 h-20 rounded"
-          size="sm"
-        />
+        {course.image ? (
+          <img
+            src={course.image}
+            alt={course.fullname}
+            className="w-20 h-20 rounded object-cover"
+          />
+        ) : (
+          <CoursePlaceholderImage
+            courseId={course.id}
+            category={course.category}
+            className="w-20 h-20 rounded"
+            size="sm"
+          />
+        )}
       </Link>
 
       <div className="flex-1 min-w-0">
