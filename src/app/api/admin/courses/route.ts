@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/db';
 
@@ -62,6 +62,102 @@ export async function GET() {
     console.error('Error fetching admin courses:', error);
     return NextResponse.json(
       { error: 'Failed to fetch courses. The database may not be set up yet.' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/admin/courses
+ * Create a new course. Requires admin role.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+
+    if (currentUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      fullname,
+      shortname,
+      categoryId,
+      visible = true,
+      startdate,
+      enddate,
+      idnumber,
+      summary,
+      format = 'topics',
+      numsections = 10,
+      lang,
+      maxbytes = 0,
+      showactivitydates = true,
+      enablecompletion = true,
+    } = body;
+
+    if (!fullname || typeof fullname !== 'string' || fullname.trim().length === 0) {
+      return NextResponse.json({ error: 'Course full name is required' }, { status: 400 });
+    }
+
+    if (!shortname || typeof shortname !== 'string' || shortname.trim().length === 0) {
+      return NextResponse.json({ error: 'Course short name is required' }, { status: 400 });
+    }
+
+    if (!categoryId) {
+      return NextResponse.json({ error: 'Course category is required' }, { status: 400 });
+    }
+
+    // Check shortname uniqueness
+    const existing = await prisma.course.findUnique({
+      where: { shortname: shortname.trim() },
+    });
+    if (existing) {
+      return NextResponse.json({ error: `Short name "${shortname.trim()}" is already in use` }, { status: 400 });
+    }
+
+    // Verify category exists
+    const category = await prisma.courseCategory.findUnique({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      return NextResponse.json({ error: 'Selected category does not exist' }, { status: 400 });
+    }
+
+    const course = await prisma.course.create({
+      data: {
+        fullname: fullname.trim(),
+        shortname: shortname.trim(),
+        categoryId,
+        visible,
+        startdate: startdate ? new Date(startdate) : new Date(),
+        enddate: enddate ? new Date(enddate) : null,
+        idnumber: idnumber?.trim() || null,
+        summary: summary?.trim() || null,
+        format,
+        numsections,
+        lang: lang || null,
+        maxbytes,
+        showactivitydates,
+        enablecompletion,
+      },
+    });
+
+    return NextResponse.json({ course }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating course:', error);
+    return NextResponse.json(
+      { error: 'Failed to create course' },
       { status: 500 }
     );
   }
